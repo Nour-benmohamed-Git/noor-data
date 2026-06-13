@@ -16,7 +16,7 @@ https://cdn.jsdelivr.net/gh/Nour-benmohamed-Git/noor-data@main/<path>
 
 | Folder | What | Format | Used by |
 |--------|------|--------|---------|
-| `translations/` | Verse translations the app offers | `{ "surah:verse": "text" }` | Translations (live) |
+| `translations/` | 113 verse translations (43 languages) + `index.json` catalog | `{ "surah:verse": "text" }`; manifest `[{id,name,language,author,isDefault}]` | Translations (live) |
 | `word-by-word/` | Per-word gloss + transliteration | `{ "surah:verse": [{ "g", "t" }] }` | Word-by-word (live) — see folder README |
 | `tafsir/` | English verse commentary | source JSON | Tafsir (planned) |
 | `indopak/` | IndoPak-script word text (`1.json`…`114.json`) | `{ "<verse>": { total_words, words[] } }` | IndoPak script (planned) |
@@ -28,8 +28,9 @@ https://cdn.jsdelivr.net/gh/Nour-benmohamed-Git/noor-data@main/<path>
 [TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets):
 
 ```bash
-node scripts/fetch-data.mjs      # translations, tafsir, indopak
-node scripts/fetch-tajweed.mjs   # tajweed/uthmani.json (from quran.com API)
+node scripts/fetch-translations.mjs  # all 113 translations + index.json manifest
+node scripts/fetch-data.mjs          # tafsir, indopak
+node scripts/fetch-tajweed.mjs       # tajweed/uthmani.json (from quran.com API)
 ```
 
 `word-by-word/en_wbw.json` is generated separately — see

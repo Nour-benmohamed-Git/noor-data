@@ -1,0 +1,5 @@
+# Normalized tafsir wire files that are NOT shipped (publisher-copyright risk +
+# large). Regenerate locally with Noor's scripts/build-tafsir.mjs if a license
+# is cleared, then remove the matching line below to commit.
+tafsir/en_ibnkathir.json
+tafsir/en_maarif.json
