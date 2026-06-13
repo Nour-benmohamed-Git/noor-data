@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noor · Legal</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1c2421;
+    --muted: #5d6b65; --accent: #1f7a5a; --border: #e7e3da;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 56px 22px; }
+  .brand { font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: 28px; margin: 10px 0 26px; letter-spacing: -0.4px; }
+  a.card {
+    display: block; text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 12px;
+  }
+  a.card:hover { border-color: var(--accent); }
+  .card .t { font-size: 18px; font-weight: 600; }
+  .card .d { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Noor</div>
+  <h1>Legal &amp; Privacy</h1>
+  <a class="card" href="privacy.html"><div class="t">Privacy Policy</div><div class="d">What data we handle — and why there's almost none.</div></a>
+  <a class="card" href="terms.html"><div class="t">Terms of Service</div><div class="d">The terms for using Noor.</div></a>
+  <a class="card" href="licenses.html"><div class="t">Open-Source Licenses</div><div class="d">The software and Quranic data Noor is built on.</div></a>
+  <footer>© <span id="y">2026</span> Noor App · <a href="mailto:nour@chopchop.se" style="color:var(--muted)">nour@chopchop.se</a></footer>
+</div>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>

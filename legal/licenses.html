@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="index, follow">
+<title>Open-Source Licenses · Noor</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --text: #1c2421;
+    --muted: #5d6b65;
+    --accent: #1f7a5a;
+    --border: #e7e3da;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    font-size: 17px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 22px 72px; }
+  header.doc { border-bottom: 1px solid var(--border); padding-bottom: 22px; margin-bottom: 30px; }
+  .brand { font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 12px 0 6px; letter-spacing: -0.4px; }
+  .effective { color: var(--muted); font-size: 14px; margin: 0; }
+  h2 { font-size: 19px; margin: 32px 0 6px; letter-spacing: -0.2px; }
+  p, li { color: var(--text); }
+  .lead { font-size: 18px; }
+  a { color: var(--accent); }
+  ul { padding-left: 20px; margin: 8px 0 0; }
+  li { margin: 5px 0; }
+  .pkg { font-size: 15.5px; }
+  .lic { color: var(--muted); font-size: 13px; letter-spacing: 0.02em; }
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 22px 0;
+  }
+  footer.doc { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+  footer.doc a { color: var(--muted); }
+  .muted { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc">
+    <div class="brand">Noor</div>
+    <h1>Open-Source Licenses &amp; Acknowledgements</h1>
+    <p class="effective">Updated 14 June 2026</p>
+  </header>
+
+  <p class="lead">Noor is built on the work of the open-source community and on freely shared Quranic scholarship. We are grateful to all of them. The components and data sources below are used under their respective licenses; full license texts are available in each project's repository.</p>
+
+  <h2>Application framework</h2>
+  <ul>
+    <li class="pkg">React, React Native <span class="lic">— MIT</span></li>
+    <li class="pkg">Expo SDK and Expo modules <span class="lic">— MIT</span></li>
+  </ul>
+
+  <h2>Navigation &amp; interface</h2>
+  <ul>
+    <li class="pkg">React Navigation (native, native-stack, bottom-tabs) <span class="lic">— MIT</span></li>
+    <li class="pkg">react-native-screens, react-native-safe-area-context <span class="lic">— MIT</span></li>
+    <li class="pkg">react-native-gesture-handler <span class="lic">— MIT</span></li>
+    <li class="pkg">react-native-svg, expo-linear-gradient <span class="lic">— MIT</span></li>
+  </ul>
+
+  <h2>Audio &amp; on-device speech</h2>
+  <ul>
+    <li class="pkg">react-native-track-player <span class="lic">— Apache-2.0</span></li>
+    <li class="pkg">react-native-sherpa-onnx <span class="lic">— MIT</span></li>
+    <li class="pkg">sherpa-onnx (k2-fsa) on-device speech engine <span class="lic">— Apache-2.0</span></li>
+    <li class="pkg">ONNX Runtime <span class="lic">— MIT</span></li>
+    <li class="pkg">react-native-live-audio-stream <span class="lic">— MIT</span></li>
+  </ul>
+
+  <h2>Storage, files &amp; system</h2>
+  <ul>
+    <li class="pkg">@react-native-async-storage/async-storage <span class="lic">— MIT</span></li>
+    <li class="pkg">expo-sqlite, expo-file-system, expo-asset <span class="lic">— MIT</span></li>
+    <li class="pkg">@dr.pogodin/react-native-fs <span class="lic">— MIT</span></li>
+    <li class="pkg">expo-clipboard, expo-haptics, expo-network, expo-font <span class="lic">— MIT</span></li>
+    <li class="pkg">expo-splash-screen, expo-status-bar, expo-dev-client <span class="lic">— MIT</span></li>
+  </ul>
+
+  <h2>Icons</h2>
+  <ul>
+    <li class="pkg">@expo/vector-icons (Ionicons) <span class="lic">— MIT</span></li>
+  </ul>
+
+  <h2>Fonts</h2>
+  <p class="muted">The Arabic typefaces are bundled under the SIL Open Font License 1.1 (OFL-1.1); the npm packages that deliver them are MIT-licensed.</p>
+  <ul>
+    <li class="pkg">Amiri, Amiri Quran <span class="lic">— OFL-1.1</span></li>
+    <li class="pkg">Scheherazade New, Lateef <span class="lic">— OFL-1.1</span></li>
+    <li class="pkg">Noto Naskh Arabic, Noto Sans Arabic <span class="lic">— OFL-1.1</span></li>
+    <li class="pkg">Reem Kufi <span class="lic">— OFL-1.1</span></li>
+  </ul>
+
+  <h2>Quran text &amp; content data</h2>
+  <div class="callout">
+    The Arabic Quran text is reproduced verbatim and unaltered. We claim no ownership over the Qur'anic text.
+  </div>
+  <ul>
+    <li class="pkg">Quran Arabic text (Uthmani &amp; Simple) — <a href="https://tanzil.net">Tanzil.net</a> <span class="lic">— Tanzil license; free use with attribution</span></li>
+    <li class="pkg">Translations — Tanzil.net translation project <span class="lic">— individually licensed by translator; attribution required</span></li>
+    <li class="pkg">Word-by-word &amp; transliteration — <a href="https://qul.tarteel.ai">Quranic Universal Library</a>, derived from the <a href="https://corpus.quran.com">Quranic Arabic Corpus</a> <span class="lic">— GNU license; attribution + link to corpus.quran.com required</span></li>
+    <li class="pkg">Tafsir — Tafsir al-Mukhtasar, Markaz Tafsir (Riyadh) <span class="lic">— free distribution</span></li>
+    <li class="pkg">Reciter audio — <a href="https://everyayah.com">EveryAyah</a> (everyayah.com); each recitation remains the property of the respective reciter and publisher</li>
+  </ul>
+
+  <footer class="doc">
+    <p>© <span id="y">2026</span> Noor App · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></p>
+    <p class="muted">Package versions reflect the current release; license names are taken from each package's published metadata.</p>
+  </footer>
+</div>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>
