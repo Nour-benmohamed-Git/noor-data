@@ -29,6 +29,13 @@ production.** This file records provenance and the attribution shown in-app.
   generally free to distribute; Ibn Kathir (abridged) and Maarif-ul-Quran English
   translations may carry publisher copyright. **Confirm before shipping commercially.**
 
+## Tajweed — `tajweed/`
+- **Source:** [quran.com API v4](https://api.quran.com/api/v4/quran/verses/uthmani_tajweed)
+  (`text_uthmani_tajweed`) — Uthmani text with inline `<tajweed class="…">` markup.
+- **Content:** rule annotations over the text (reciter-independent).
+- **License:** quran.com / KFGQPC Uthmani text — confirm redistribution terms before
+  commercial use.
+
 ## IndoPak word text — `indopak/`
 - **Source:** [TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets) (`indopak-word-by-word/`).
 - **Content:** IndoPak-script Arabic, segmented per word (no translation).

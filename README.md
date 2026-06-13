@@ -20,6 +20,7 @@ https://cdn.jsdelivr.net/gh/Nour-benmohamed-Git/noor-data@main/<path>
 | `word-by-word/` | Per-word gloss + transliteration | `{ "surah:verse": [{ "g", "t" }] }` | Word-by-word (live) — see folder README |
 | `tafsir/` | English verse commentary | source JSON | Tafsir (planned) |
 | `indopak/` | IndoPak-script word text (`1.json`…`114.json`) | `{ "<verse>": { total_words, words[] } }` | IndoPak script (planned) |
+| `tajweed/` | Uthmani text with tajweed markup | `{ "surah:verse": "…<tajweed class=…>…" }` | Tajweed-colored mushaf (planned) |
 
 ## Refreshing
 
@@ -27,7 +28,8 @@ https://cdn.jsdelivr.net/gh/Nour-benmohamed-Git/noor-data@main/<path>
 [TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets):
 
 ```bash
-node scripts/fetch-data.mjs
+node scripts/fetch-data.mjs      # translations, tafsir, indopak
+node scripts/fetch-tajweed.mjs   # tajweed/uthmani.json (from quran.com API)
 ```
 
 `word-by-word/en_wbw.json` is generated separately — see
