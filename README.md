@@ -1,0 +1,39 @@
+# noor-data
+
+Public, data-only companion to the Noor Quran app. Holds the JSON datasets the
+app downloads on demand, served free via the [jsDelivr](https://www.jsdelivr.com/)
+CDN. The app source lives in a separate **private** repo.
+
+> ⚠️ This repo **must stay public** — jsDelivr only serves public GitHub repos.
+
+## CDN base
+
+```
+https://cdn.jsdelivr.net/gh/Nour-benmohamed-Git/noor-data@main/<path>
+```
+
+## Contents
+
+| Folder | What | Format | Used by |
+|--------|------|--------|---------|
+| `translations/` | Verse translations the app offers | `{ "surah:verse": "text" }` | Translations (live) |
+| `word-by-word/` | Per-word gloss + transliteration | `{ "surah:verse": [{ "g", "t" }] }` | Word-by-word (live) — see folder README |
+| `tafsir/` | English verse commentary | source JSON | Tafsir (planned) |
+| `indopak/` | IndoPak-script word text (`1.json`…`114.json`) | `{ "<verse>": { total_words, words[] } }` | IndoPak script (planned) |
+
+## Refreshing
+
+`translations/`, `tafsir/`, and `indopak/` are pulled and transformed from
+[TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets):
+
+```bash
+node scripts/fetch-data.mjs
+```
+
+`word-by-word/en_wbw.json` is generated separately — see
+[`word-by-word/README.md`](word-by-word/README.md).
+
+## Licensing
+
+Each dataset retains its original source and license — see [SOURCES.md](SOURCES.md).
+**Verify per-resource terms before commercial use**, especially tafsir and translations.
