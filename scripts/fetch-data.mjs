@@ -19,7 +19,20 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = 'https://raw.githubusercontent.com/TarteelAI/quran-assets/main';
 const CONCURRENCY = 12;
 
-const TAFSIRS = ['en-tafsir-ibn-kathir', 'en-tafsir-maarif-ul-quran', 'en-tafsir-mokhtasar'];
+// Shipped: en-tafsir-mokhtasar (explicit free license) + the two classical Arabic
+// tafsirs below (public domain). ar-tafsir-qurtubi = Al-Qurtubi (d. 1273),
+// ar-tafsir-baghawy = Al-Baghawi / Ma'alim al-Tanzil (d. 1122).
+// NOTE: quran-assets' "ar-tafsir-tanweer" is Ibn Ashur's at-Tahrir wa't-Tanwir
+// (d. 1973) — modern/copyrighted, NOT the classical Tanwir al-Miqbas — so it is
+// intentionally excluded. The two English files below are inputs for the
+// gitignored (copyright-risk) wire files; not shipped.
+const TAFSIRS = [
+  'en-tafsir-mokhtasar',
+  'ar-tafsir-qurtubi',
+  'ar-tafsir-baghawy',
+  'en-tafsir-ibn-kathir',
+  'en-tafsir-maarif-ul-quran',
+];
 
 async function getJson(url) {
   const r = await fetch(url);

@@ -23,11 +23,26 @@ production.** This file records provenance and the attribution shown in-app.
 - **Generated** via the Noor repo's `scripts/build-wbw.mjs` (alignment-audited).
 
 ## Tafsir — `tafsir/`
-- **Source:** [TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets) (`tafsir/`).
-- **Files:** Ibn Kathir (abridged, EN), Maarif-ul-Quran (EN), Al-Mukhtasar/Mokhtasar (EN).
-- **License:** ⚠️ **Varies and not all are commercial-friendly.** Al-Mukhtasar is
-  generally free to distribute; Ibn Kathir (abridged) and Maarif-ul-Quran English
-  translations may carry publisher copyright. **Confirm before shipping commercially.**
+- **Source:** [TarteelAI/quran-assets](https://github.com/TarteelAI/quran-assets) (`tafsir/`),
+  normalized to `{ "surah:verse": text }` by the Noor repo's `scripts/build-tafsir.mjs`.
+- **Shipped (in the app catalog):**
+  - `en_mokhtasar` — **Al-Mukhtasar** (Markaz Tafsir, Riyadh). Explicitly free to redistribute.
+  - `ar_qurtubi` — **Al-Qurtubi** (Abu Abdullah al-Qurtubi, d. 671 AH / 1273 CE).
+    Classical → **public domain** (author died > 700 years ago). One empty ayah (28:34).
+  - `ar_baghawi` — **Al-Baghawi / Ma'alim al-Tanzil** (al-Husayn al-Baghawi, d. 516 AH /
+    1122 CE). Classical → **public domain**. Complete (0 empty ayat).
+- **Generated but NOT shipped (gitignored, copyright risk):** `en_ibnkathir`
+  (Darussalam abridged translation ©) and `en_maarif` (Ma'arif-ul-Quran ©). The raw
+  English inputs (`en-tafsir-*.json`) remain in the repo only as build inputs.
+- **Intentionally excluded:** quran-assets' `ar-tafsir-tanweer` is **Ibn Ashur's
+  at-Tahrir wa't-Tanwir** (Muhammad al-Tahir ibn Ashur, d. 1973) — modern and
+  **copyrighted**, *not* the classical (public-domain) Tanwir al-Miqbas its slug
+  suggests. Verified by content, so it is not fetched or built.
+- **License note:** QUL/quran.com disclaim uniform licensing — each resource carries
+  its own copyright and you must verify per-resource ([QUL FAQ](https://qul.tarteel.ai/faq)).
+  Only the three shipped above are cleared for this commercial app (one explicit free
+  license + two public-domain classical works). The other quran-assets tafsirs (modern
+  English/Urdu/Bengali/Russian translations) carry live publisher copyright and are not shipped.
 
 ## Tajweed — `tajweed/`
 - **Source:** [quran.com API v4](https://api.quran.com/api/v4/quran/verses/uthmani_tajweed)
