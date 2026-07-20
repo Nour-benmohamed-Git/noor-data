@@ -108,8 +108,8 @@ $PY -c "import k2" 2>/dev/null || \
   $PY -m pip install --no-cache-dir "$K2_PIN" -f https://k2-fsa.github.io/k2/cuda.html
 $PY -c "import k2; print('k2', getattr(k2, '__version__', getattr(k2, '__dev_version__', 'ok')))"
 
-$PY -c "import lhotse, huggingface_hub, pyarrow, soundfile, sherpa_onnx" 2>/dev/null || \
-  $PY -m pip install --no-cache-dir lhotse huggingface_hub pyarrow soundfile \
+$PY -c "import lhotse, huggingface_hub, pyarrow, soundfile, sherpa_onnx, lilcom" 2>/dev/null || \
+  $PY -m pip install --no-cache-dir lhotse lilcom huggingface_hub pyarrow soundfile \
       sherpa-onnx kaldialign sentencepiece tensorboard onnx onnxruntime
 
 if [ ! -d "$BASE/icefall" ]; then
