@@ -41,6 +41,9 @@ export CHUNK_SIZES="${CHUNK_SIZES:-8,16,32,-1}" # 8 = 160ms profile (the app's)
 export EXPORT_CHUNK="${EXPORT_CHUNK:-8}"
 export EXPORT_LEFT="${EXPORT_LEFT:-256}"
 export EXPORT_AVG="${EXPORT_AVG:-3}"
+# Use every GPU on the pod (DDP): a 4x 4090 pod costs the same total dollars
+# as 1x for the same epochs, but finishes ~4x sooner.
+export WORLD_SIZE="${WORLD_SIZE:-auto}"
 
 ICEFALL_COMMIT="3f848bb6d0acc970c9b294a30ca0a04a7c9c78d1"   # master 2026-07-16
 K2_PIN="k2==1.24.4.dev20250715+cuda12.4.torch2.4.0"
@@ -62,6 +65,9 @@ done_p() { [ -f "$STATE/$1.done" ]; }
 log "S0 preflight"
 command -v nvidia-smi >/dev/null || fail "no nvidia-smi — this is not a GPU pod"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || true
+NGPU=$(nvidia-smi -L 2>/dev/null | wc -l); [ "$NGPU" -ge 1 ] || NGPU=1
+if [ "$WORLD_SIZE" = "auto" ]; then WORLD_SIZE=$NGPU; fi
+log "GPUs: $NGPU (training with --world-size $WORLD_SIZE)"
 PY=python3
 $PY - <<'PYEOF' || fail "python check failed"
 import sys
@@ -882,7 +888,7 @@ PYEOF
 fi
 
 train_common_args() {
-  echo --world-size 1 \
+  echo --world-size "$WORLD_SIZE" \
        --use-transducer 0 --use-ctc 1 \
        --causal 1 --chunk-size "$CHUNK_SIZES" \
        --use-bf16 1 \
@@ -981,7 +987,7 @@ if ! done_p s8_train; then
         sleep 600
         NOW=$(date +%s)
         H=$(awk -v a="$NOW" -v b="$T0" 'BEGIN{printf "%.1f", (a-b)/3600}')
-        C=$(awk -v h="$H" 'BEGIN{printf "%.2f", h*0.34}')
+        C=$(awk -v h="$H" -v g="$WORLD_SIZE" 'BEGIN{printf "%.2f", h*0.34*g}')
         E=$(ls "$EXP"/epoch-*.pt 2>/dev/null | wc -l || true)
         echo "[quran-train] elapsed ${H}h (~\$${C} at \$0.34/h) — epoch checkpoints: ${E:-0}/$NUM_EPOCHS"
         # keep the volume alive: retain only the last 6 epoch checkpoints
