@@ -492,6 +492,8 @@ def main():
             cuts.append(MonoCut(id=rid, start=0.0, duration=rec.duration,
                                 channel=0, recording=rec))
         musan = CutSet.from_cuts(cuts).cut_into_windows(duration=10.0)
+        # windowing leaves sub-frame tail slivers that crash the fbank layer
+        musan = musan.filter(lambda c: c.duration >= 0.5).to_eager()
         musan = musan.compute_and_store_features(
             extractor=extractor,
             storage_path=os.path.join(args.feats, "musan"),
