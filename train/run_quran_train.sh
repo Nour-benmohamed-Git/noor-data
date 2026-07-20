@@ -434,6 +434,13 @@ import argparse
 import glob
 import os
 
+import torch
+
+# lhotse's process-pool feature workers deadlock when torch multithreads
+# inside each worker (lhotse prints this exact warning). One thread per
+# worker; parallelism comes from --num-jobs processes.
+torch.set_num_threads(1)
+
 from lhotse import CutSet, Fbank, FbankConfig, LilcomChunkyWriter, Recording
 from lhotse.cut import MonoCut
 
