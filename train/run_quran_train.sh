@@ -77,7 +77,7 @@ print("python", sys.version.split()[0])
 PYEOF
 AVAIL_GB=$(df -BG --output=avail /workspace | tail -1 | tr -dc '0-9')
 if [ ! -f "$STATE/s4_data.done" ]; then
-  [ "$AVAIL_GB" -ge 100 ] || fail "need >=100 GB free on /workspace for a fresh run, have ${AVAIL_GB}G"
+  [ "$AVAIL_GB" -ge 85 ] || fail "need >=85 GB free on /workspace for a fresh run, have ${AVAIL_GB}G"
 else
   [ "$AVAIL_GB" -ge 15 ] || fail "volume nearly full (${AVAIL_GB}G free) — delete old epoch checkpoints in $EXP"
 fi
@@ -850,6 +850,10 @@ if ! done_p s5_feats; then
   fi
   $PY "$TOOLS/make_features.py" --data "$DATA" --feats "$FEATS" \
       --musan-dir "$BASE/musan/musan"
+  # Training reads precomputed features only; the train wavs (~35 GB) are no
+  # longer needed. Keep dev wavs (eval decodes audio).
+  find "$WAVS" -name 'train_*.wav' -delete 2>/dev/null || true
+  log "train wavs deleted (features are precomputed; dev wavs kept for eval)"
   mark s5_feats
 fi
 
