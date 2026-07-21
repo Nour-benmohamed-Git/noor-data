@@ -936,8 +936,12 @@ PYEOF
   cp -f "$DATA/musan_cuts.jsonl.gz" "$SMOKE/data/" 2>/dev/null || true
   ( cd "$RECIPE" && $PY train.py $(train_common_args) \
       --manifest-dir "$SMOKE/data" \
+      --world-size 1 --max-duration 150 --num-buckets 2 \
       --exp-dir "$SMOKE/exp" --num-epochs 1 --start-epoch 1 \
     2>&1 | tee "$SMOKE/train.log" )
+  # (smoke is single-GPU with small batches: 2h split across 6 DDP ranks with
+  # 500s batches + 30 buckets starves ranks of complete batches -> ZeroDivision
+  # at the epoch summary. The full 900h run gives every rank ~1000 batches.)
   grep -q "Epoch 1" "$SMOKE/train.log" || fail "smoke train produced no epoch log"
   [ -f "$SMOKE/exp/epoch-1.pt" ] || fail "smoke train produced no checkpoint"
 
