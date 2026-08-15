@@ -2115,6 +2115,24 @@ PYEOF
   log "S7b DDP sanity PASSED"
 fi
 
+# ----------------------------- phase gate ------------------------------------
+# The prep pod (fewer GPUs than TRAIN_GPUS) must not roll into the full train:
+# it would run at TRAIN_GPUS x the wall-clock, or OOM at the merged batch size.
+# Intentionally training on THIS pod anyway: set TRAIN_GPUS to its GPU count.
+if ! done_p s8_train && [ "$WORLD_SIZE" -lt "$TRAIN_GPUS" ]; then
+  log "PREP PHASE COMPLETE (this pod has $WORLD_SIZE GPU(s); training wants $TRAIN_GPUS)"
+  echo "=============================================================="
+  echo " Next:"
+  echo " 1. Upload the SHIPPED model now (the eval needs it):"
+  echo "      $BASE/incumbent/model.int8.onnx  <- app assets/models/quran-phoneme-160/model.int8.onnx"
+  echo "      $BASE/incumbent/tokens.txt       <- app assets/models/quran-phoneme-160/tokens.tokens (renamed)"
+  echo " 2. STOP this pod (it bills while idle)."
+  echo " 3. Deploy ${TRAIN_GPUS}x A100 80GB SXM Secure on the SAME volume, then run:"
+  echo "      EXPECTED_GPUS=$TRAIN_GPUS bash <(curl -fsSL https://raw.githubusercontent.com/Nour-benmohamed-Git/noor-data/master/train/run_quran_train_v2.sh)"
+  echo "=============================================================="
+  exit 0
+fi
+
 # ----------------------------- S8: full training -----------------------------
 if ! done_p s8_train; then
   START=1
