@@ -1930,7 +1930,9 @@ if ! done_p musan_extracted; then
   log "S5 downloading MUSAN"
   rm -rf "$BASE/musan"; mkdir -p "$BASE/musan"
   curl -fL --retry 3 -o "$BASE/musan/musan.tar.gz" "$MUSAN_URL"
-  tar -xzf "$BASE/musan/musan.tar.gz" -C "$BASE/musan"
+  # --no-same-owner: network volumes forbid chown; without it tar exits 2 on
+  # thousands of harmless ownership warnings and set -e kills the run
+  tar -xzf "$BASE/musan/musan.tar.gz" -C "$BASE/musan" --no-same-owner
   rm -f "$BASE/musan/musan.tar.gz"
   rm -rf "$BASE/musan/musan/speech"   # never mixed (intelligible speech injects competing phonemes)
   mark musan_extracted
