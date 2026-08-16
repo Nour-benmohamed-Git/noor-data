@@ -2114,9 +2114,9 @@ import os
 from lhotse import CutSet
 cs = CutSet.from_file(os.environ['DATA'] + '/quran_cuts_train.jsonl.gz')
 print(int(sum(c.duration for c in cs) / 3600))")
-  awk -v dt="$((T1 - T0))" -v sub=8 -v full="$FULL_H" -v tg="$TRAIN_GPUS" -v ep="$NUM_EPOCHS" -v rate="$GPU_RATE" 'BEGIN{
-    eph = dt / 3600 * full / sub / tg;
-    printf "[smoke] measured: %.0fs for %dh on 1 GPU; full set %dh -> projected %.1fh/epoch on %d GPUs, %.1fh total, ~$%.0f\n", dt, sub, full, eph, tg, eph * ep, eph * ep * tg * rate
+  awk -v dt="$((T1 - T0))" -v subh=8 -v full="$FULL_H" -v tg="$TRAIN_GPUS" -v ep="$NUM_EPOCHS" -v rate="$GPU_RATE" 'BEGIN{
+    eph = dt / 3600 * full / subh / tg;
+    printf "[smoke] measured: %.0fs for %dh on 1 GPU; full set %dh -> projected %.1fh/epoch on %d GPUs, %.1fh total, ~$%.0f\n", dt, subh, full, eph, tg, eph * ep, eph * ep * tg * rate
   }'
 
   ( cd "$RECIPE" && $PY export-onnx-streaming-ctc.py \
