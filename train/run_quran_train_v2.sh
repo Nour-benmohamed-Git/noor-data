@@ -1162,15 +1162,25 @@ def main():
             print("[feats:indev] already done")
             return
         cuts = CutSet.from_file(os.path.join(args.data, "ea_cuts_indev_raw.jsonl.gz"))
-        cuts = cuts.compute_and_store_features(
-            extractor=extractor,
-            storage_path=os.path.join(args.feats, "quran_dev"),
-            num_jobs=n_jobs(),
-            storage_type=LilcomChunkyWriter,
-        )
-        assert len(cuts) > 0, "dev set is EMPTY — refusing (an empty dev reports a perfect score)"
-        cuts.to_file(out_manifest)
-        print(f"[feats:indev] {len(cuts)} dev cuts with features")
+        store = os.path.join(args.feats, "quran_dev")
+        for attempt in range(3):
+            try:
+                shutil.rmtree(store, ignore_errors=True)
+                cuts_f = cuts.compute_and_store_features(
+                    extractor=extractor,
+                    storage_path=store,
+                    num_jobs=n_jobs(),
+                    storage_type=LilcomChunkyWriter,
+                )
+                break
+            except OSError as e:
+                print(f"[feats:indev] attempt {attempt + 1} I/O error: {e} — retrying in 30s")
+                time.sleep(30)
+        else:
+            raise SystemExit("indev features failed 3 attempts — stop/start the pod, re-paste")
+        assert len(cuts_f) > 0, "dev set is EMPTY — refusing (an empty dev reports a perfect score)"
+        cuts_f.to_file(out_manifest)
+        print(f"[feats:indev] {len(cuts_f)} dev cuts with features")
         return
 
     if args.source == "musan":
@@ -1204,14 +1214,24 @@ def main():
         musan = CutSet.from_cuts(cuts).cut_into_windows(duration=10.0)
         # windowing leaves sub-frame tail slivers that crash the fbank layer
         musan = musan.filter(lambda c: c.duration >= 0.5).to_eager()
-        musan = musan.compute_and_store_features(
-            extractor=extractor,
-            storage_path=os.path.join(args.feats, "musan"),
-            num_jobs=n_jobs(),
-            storage_type=LilcomChunkyWriter,
-        )
-        musan.to_file(out_manifest)
-        print(f"[feats] musan: {len(musan)} cuts with features")
+        store = os.path.join(args.feats, "musan")
+        for attempt in range(3):
+            try:
+                shutil.rmtree(store, ignore_errors=True)
+                musan_f = musan.compute_and_store_features(
+                    extractor=extractor,
+                    storage_path=store,
+                    num_jobs=n_jobs(),
+                    storage_type=LilcomChunkyWriter,
+                )
+                break
+            except OSError as e:
+                print(f"[feats] musan attempt {attempt + 1} I/O error: {e} — retrying in 30s")
+                time.sleep(30)
+        else:
+            raise SystemExit("musan features failed 3 attempts — stop/start the pod, re-paste")
+        musan_f.to_file(out_manifest)
+        print(f"[feats] musan: {len(musan_f)} cuts with features")
         return
 
     raise SystemExit(f"unknown --source {args.source}")
