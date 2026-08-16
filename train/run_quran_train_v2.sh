@@ -1045,9 +1045,12 @@ import torch
 # inside each worker. One thread per worker; parallelism = --num-jobs.
 torch.set_num_threads(1)
 
+from dataclasses import replace as dc_replace
+
 from lhotse import (CutSet, Fbank, FbankConfig, LilcomChunkyWriter, Recording,
                     RecordingSet)
 from lhotse.cut import MonoCut
+from lhotse.utils import fastcopy
 
 
 def n_jobs():
@@ -1056,6 +1059,33 @@ def n_jobs():
     except AttributeError:
         n = os.cpu_count() or 8
     return max(2, min(n, 16))
+
+
+def compute_local_then_copy(cuts, extractor, local_name, final_store):
+    """The network volume throws EIO under sustained many-writer load, but a
+    single sequential bulk copy usually survives (and is cheaply retried).
+    Compute features on the pod-local disk, then copy once to the volume and
+    rewrite the manifest's storage paths."""
+    local = os.path.join("/tmp", local_name)
+    shutil.rmtree(local, ignore_errors=True)
+    cs = cuts.compute_and_store_features(
+        extractor=extractor, storage_path=local,
+        num_jobs=n_jobs(), storage_type=LilcomChunkyWriter)
+    for attempt in range(5):
+        try:
+            shutil.rmtree(final_store, ignore_errors=True)
+            shutil.copytree(local, final_store)
+            break
+        except OSError as e:
+            print(f"[feats] volume copy attempt {attempt + 1} I/O error: {e} — retrying in 30s")
+            time.sleep(30)
+    else:
+        raise SystemExit("bulk copy to volume failed 5 attempts — stop/start the pod, re-paste")
+    shutil.rmtree(local, ignore_errors=True)
+    return CutSet.from_cuts(
+        fastcopy(c, features=dc_replace(
+            c.features, storage_path=c.features.storage_path.replace(local, final_store)))
+        for c in cs).to_eager()
 
 
 def main():
@@ -1162,22 +1192,8 @@ def main():
             print("[feats:indev] already done")
             return
         cuts = CutSet.from_file(os.path.join(args.data, "ea_cuts_indev_raw.jsonl.gz"))
-        store = os.path.join(args.feats, "quran_dev")
-        for attempt in range(3):
-            try:
-                shutil.rmtree(store, ignore_errors=True)
-                cuts_f = cuts.compute_and_store_features(
-                    extractor=extractor,
-                    storage_path=store,
-                    num_jobs=n_jobs(),
-                    storage_type=LilcomChunkyWriter,
-                )
-                break
-            except OSError as e:
-                print(f"[feats:indev] attempt {attempt + 1} I/O error: {e} — retrying in 30s")
-                time.sleep(30)
-        else:
-            raise SystemExit("indev features failed 3 attempts — stop/start the pod, re-paste")
+        cuts_f = compute_local_then_copy(
+            cuts, extractor, "noor_feats_dev", os.path.join(args.feats, "quran_dev"))
         assert len(cuts_f) > 0, "dev set is EMPTY — refusing (an empty dev reports a perfect score)"
         cuts_f.to_file(out_manifest)
         print(f"[feats:indev] {len(cuts_f)} dev cuts with features")
@@ -1214,22 +1230,8 @@ def main():
         musan = CutSet.from_cuts(cuts).cut_into_windows(duration=10.0)
         # windowing leaves sub-frame tail slivers that crash the fbank layer
         musan = musan.filter(lambda c: c.duration >= 0.5).to_eager()
-        store = os.path.join(args.feats, "musan")
-        for attempt in range(3):
-            try:
-                shutil.rmtree(store, ignore_errors=True)
-                musan_f = musan.compute_and_store_features(
-                    extractor=extractor,
-                    storage_path=store,
-                    num_jobs=n_jobs(),
-                    storage_type=LilcomChunkyWriter,
-                )
-                break
-            except OSError as e:
-                print(f"[feats] musan attempt {attempt + 1} I/O error: {e} — retrying in 30s")
-                time.sleep(30)
-        else:
-            raise SystemExit("musan features failed 3 attempts — stop/start the pod, re-paste")
+        musan_f = compute_local_then_copy(
+            musan, extractor, "noor_feats_musan", os.path.join(args.feats, "musan"))
         musan_f.to_file(out_manifest)
         print(f"[feats] musan: {len(musan_f)} cuts with features")
         return
