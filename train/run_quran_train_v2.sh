@@ -5,7 +5,7 @@
 # v2 of scripts/runpod_train_quran_phoneme.sh. Same one-paste, marker-resumable
 # shape; what changed and why (audit 2026-08-15, all findings verified):
 #
-#   DATA   everyayah ~700h (was 300h, cap 20h/reciter, reservoir-ish sampling,
+#   DATA   everyayah ~346h clean yield (cap 20h/reciter, reservoir-ish sampling,
 #          ayah-1 rows skipped: phantom-basmala label noise) PLUS
 #          obadx/muaalem-annotated-v3 ~800h (MIT, GOLD phoneme labels in our
 #          exact 250-unit script — verified 27/27 configs, zero OOV) PLUS
@@ -44,7 +44,10 @@ set -euo pipefail
 # ----------------------------- tunables --------------------------------------
 export BASE="${BASE:-/workspace/quran_train_v2}"
 
-export EA_TRAIN_HOURS="${EA_TRAIN_HOURS:-700}"
+# everyayah's REAL yield under the v2 filters (ayah-1 skip, 1.2-26.5s window,
+# 20h/reciter cap, 6 hash-held-out reciters, accept_p) measured 2026-08-17 on a
+# full 132-shard pass: 346h. The 700h first guess assumed v1's pre-filter count.
+export EA_TRAIN_HOURS="${EA_TRAIN_HOURS:-340}"
 export EA_CAP_HOURS="${EA_CAP_HOURS:-20}"
 export EA_INDEV_HOURS="${EA_INDEV_HOURS:-1.5}"
 export EA_ACCEPT_P="${EA_ACCEPT_P:-0.9}"        # per-row acceptance: spreads picks across each reciter's mushaf
