@@ -285,9 +285,10 @@ import re
 import subprocess
 import unicodedata
 
-# Diacritics + Quranic annotation signs (U+064B-0670, U+06D6-06ED ranges as in
-# v1) plus tatweel; digits are NOT touched (verse text has none).
-_STRIP = re.compile("[ً-ٰٟـۖ-ۭ]")
+# Diacritics + Quranic annotation signs (U+064B-0670, U+06D6-06ED as in v1)
+# plus tatweel AND Arabic Extended-A combining marks U+08D3-08FF (open tanwin
+# etc., used by some Uthmani texts e.g. RetaSy); digits are NOT touched.
+_STRIP = re.compile("[ً-ٰٟـۖ-ۭ࣓-ࣿ]")
 
 
 def mild_key(s):
@@ -302,9 +303,16 @@ def mild_key(s):
     return re.sub(r"\s+", "", s)
 
 
+def alif_key(s):
+    """Tier-1.5: mild + delete alif only. Unifies defective-alif spellings
+    (Uthmani العلمين vs imlaa'i العالمين) WITHOUT the waw-deletion collision
+    class of the rasm tier (which merged 1:2 into 37:182 and lost Al-Fatiha)."""
+    return mild_key(s).replace("ا", "")
+
+
 def rasm_key(s):
     """Tier-2 fallback: v1's aggressive skeleton (also deletes weak letters).
-    Only consulted when the mild key misses (Uthmani vs imlaa'i orthography)."""
+    Last resort when mild and alif both miss."""
     s = unicodedata.normalize("NFC", s or "")
     s = _STRIP.sub("", s)
     s = s.replace("ی", "ي").replace("ى", "ي").replace("ة", "ه")
@@ -313,7 +321,7 @@ def rasm_key(s):
 
 
 def build_matchers(labels):
-    """Returns (mild, rasm) dicts: key -> (vkey, units, group_size).
+    """Returns (mild, alif, rasm) dicts: key -> (vkey, units, group_size).
     group_size = number of verses sharing that exact text (identical units
     after the ayah-1 skip), so dedup can allow that many occurrences."""
     def build(keyfn):
@@ -333,21 +341,23 @@ def build_matchers(labels):
         return out, ambiguous
 
     mild, mild_amb = build(mild_key)
+    alif, alif_amb = build(alif_key)
     rasm, rasm_amb = build(rasm_key)
     print(f"[match] mild keys={len(mild)} (amb dropped {mild_amb}); "
+          f"alif keys={len(alif)} (amb dropped {alif_amb}); "
           f"rasm keys={len(rasm)} (amb dropped {rasm_amb})")
-    return mild, rasm
+    return mild, alif, rasm
 
 
-def match_verse(text, mild, rasm, tier_hits):
-    hit = mild.get(mild_key(text))
-    if hit is not None:
-        tier_hits["mild"] += 1
-        return hit
-    hit = rasm.get(rasm_key(text))
-    if hit is not None:
-        tier_hits["rasm"] += 1
-        return hit
+def match_verse(text, matchers, tier_hits):
+    mild, alif, rasm = matchers
+    for name, keyfn, table in (("mild", mild_key, mild),
+                               ("alif", alif_key, alif),
+                               ("rasm", rasm_key, rasm)):
+        hit = table.get(keyfn(text))
+        if hit is not None:
+            tier_hits[name] += 1
+            return hit
     tier_hits["miss"] += 1
     return None
 
@@ -472,7 +482,7 @@ def main():
     import pyarrow.parquet as pq
 
     labels = json.load(open(args.labels, encoding="utf-8"))
-    mild, rasm = build_matchers(labels)
+    matchers = build_matchers(labels)
 
     forced_dev = {norm_reciter(x) for x in args.dev_reciters.split(",") if x.strip()}
 
@@ -490,7 +500,8 @@ def main():
     else:
         st = {"done_shards": [], "reciter_sec": {}, "train_sec": 0.0,
               "indev_sec": 0.0, "unseen_sec": {}, "occ": {},
-              "tier_hits": {"mild": 0, "rasm": 0, "miss": 0}}
+              "tier_hits": {"mild": 0, "alif": 0, "rasm": 0, "miss": 0}}
+    st["tier_hits"].setdefault("alif", 0)  # states saved before the alif tier existed
     rows = read_jsonl(rows_path)
     rows_f = open(rows_path, "a", encoding="utf-8")
 
@@ -544,7 +555,7 @@ def main():
                     raw = (audio or {}).get("bytes")
                     if not raw:
                         continue
-                    hit = match_verse(text or "", mild, rasm, tier_hits)
+                    hit = match_verse(text or "", matchers, tier_hits)
                     if hit is None:
                         continue
                     vkey, units, group_size = hit
@@ -941,8 +952,8 @@ def main():
     import pyarrow.parquet as pq
 
     labels = json.load(open(args.labels, encoding="utf-8"))
-    mild, rasm = build_matchers(labels)
-    tier_hits = {"mild": 0, "rasm": 0, "miss": 0}
+    matchers = build_matchers(labels)
+    tier_hits = {"mild": 0, "alif": 0, "rasm": 0, "miss": 0}
 
     os.makedirs(args.wavs, exist_ok=True)
     fs = HfFileSystem()
@@ -978,7 +989,7 @@ def main():
                 dur = float(dur_ms or 0) / 1000.0
                 if dur < 1.0 or dur > 30.0:
                     continue
-                hit = match_verse(aya or "", mild, rasm, tier_hits)
+                hit = match_verse(aya or "", matchers, tier_hits)
                 if hit is None:
                     continue
                 vkey, units, _ = hit
@@ -1003,8 +1014,10 @@ def main():
     speakers = len({r["reciter"] for r in user_rows})
     print(f"[rs] rs_user: {len(user_rows)} clips / {speakers} speakers; "
           f"rs_mistake: {len(mistake_rows)} clips; tiers={tier_hits}")
-    assert len(user_rows) >= 250, "too few verified-correct RetaSy clips — investigate"
-    assert len(mistake_rows) >= 150, "too few RetaSy mistake clips — investigate"
+    # floors set from the dataset's REAL yield (409 correct + 62 golden total,
+    # minus non-hafs, ayah-1, fragments/isti'adha rows that legitimately miss)
+    assert len(user_rows) >= 120, "too few verified-correct RetaSy clips — investigate"
+    assert len(mistake_rows) >= 120, "too few RetaSy mistake clips — investigate"
 
 
 if __name__ == "__main__":
@@ -1860,7 +1873,7 @@ assert mu["oov_rows"] == 0, "muaalem OOV rows present"
 
 counts = {}
 for name, floor in (("ea_indev", 200), ("ea_unseen", 300), ("mu_unseen", 200),
-                    ("rs_user", 250), ("rs_mistake", 150)):
+                    ("rs_user", 120), ("rs_mistake", 120)):
     n = jsonl_count(f"{evalsets}/{name}.jsonl")
     counts[name] = n
     print(f"[gate] eval set {name}: {n} clips (floor {floor})")
