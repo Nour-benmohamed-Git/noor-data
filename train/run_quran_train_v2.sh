@@ -1036,6 +1036,8 @@ import argparse
 import glob
 import os
 import random
+import shutil
+import time
 
 import torch
 
@@ -1100,14 +1102,48 @@ def main():
                 print(f"[feats:{src}] +{len(wet)} reverberated views "
                       f"({len(train_rirs)} train RIRs, {len(eval_rirs)} held for eval)")
             cuts = cuts.shuffle(rng=random.Random(4242))
-            cuts = cuts.compute_and_store_features(
-                extractor=extractor,
-                storage_path=os.path.join(args.feats, f"quran_{src}"),
-                num_jobs=n_jobs(),
-                storage_type=LilcomChunkyWriter,
-            )
-            cuts.to_file(out_manifest)
-            print(f"[feats:{src}] {len(cuts)} cuts with features")
+            # RESUMABLE SLICES: the network volume throws sporadic EIO under
+            # sustained writes. One monolithic compute loses hours per hiccup;
+            # a slice loses minutes and completed slices are never redone.
+            # The view construction above is fully deterministic (seeded), so
+            # slice membership is identical across re-pastes.
+            all_cuts = list(cuts)
+            n_slices = 24
+            slice_manifests = []
+            for si in range(n_slices):
+                sl = all_cuts[si::n_slices]
+                sm = os.path.join(args.data, f"{src}_feats_slice_{si:02d}.jsonl.gz")
+                slice_manifests.append(sm)
+                if os.path.exists(sm):
+                    print(f"[feats:{src}] slice {si + 1}/{n_slices} already done")
+                    continue
+                storage = os.path.join(args.feats, f"quran_{src}_s{si:02d}")
+                for attempt in range(3):
+                    try:
+                        shutil.rmtree(storage, ignore_errors=True)
+                        sub = CutSet.from_cuts(sl).compute_and_store_features(
+                            extractor=extractor,
+                            storage_path=storage,
+                            num_jobs=n_jobs(),
+                            storage_type=LilcomChunkyWriter,
+                        )
+                        sub.to_file(sm)
+                        break
+                    except OSError as e:
+                        print(f"[feats:{src}] slice {si + 1} attempt {attempt + 1} "
+                              f"I/O error: {e} — retrying in 30s")
+                        time.sleep(30)
+                else:
+                    raise SystemExit(
+                        f"slice {si + 1} failed 3 attempts — volume unhealthy: "
+                        "STOP and START the pod (fresh mount), then re-paste")
+                print(f"[feats:{src}] slice {si + 1}/{n_slices} done ({len(sl)} cuts)")
+            # leftovers from the abandoned monolithic attempt waste quota
+            shutil.rmtree(os.path.join(args.feats, f"quran_{src}"), ignore_errors=True)
+            merged = CutSet.from_cuts(
+                c for sm in slice_manifests for c in CutSet.from_file(sm))
+            merged.to_file(out_manifest)
+            print(f"[feats:{src}] {len(merged)} cuts with features")
         else:
             print(f"[feats:{src}] already done")
         # verification gate before the caller may delete this source's wavs
