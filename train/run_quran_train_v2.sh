@@ -1722,40 +1722,56 @@ def main():
         for sname, rows in sets.items():
             for cond in conditions[sname]:
                 errs_u = tot_u = errs_c = tot_c = errs_m = tot_m = 0
+                scored = skipped = 0
                 for r in rows:
-                    samples, sr = load_wav(r["wav"])
-                    rng = seeded_rng(r["id"] + cond)
-                    if cond.startswith("snr"):
-                        noise, _ = load_wav(noise_paths[int(rng.integers(len(noise_paths)))])
-                        samples = add_noise(samples, noise, float(cond[3:]))
-                    elif cond == "reverb":
-                        rir, _ = load_wav(rir_paths[int(rng.integers(len(rir_paths)))])
-                        samples = add_reverb(samples, rir)
-                    hyp = decode(rec, samples, sr)
+                    # one corrupt wav or transient volume read error must not
+                    # kill a 2-hour stage — skip, count, and gate on the count
+                    try:
+                        samples, sr = load_wav(r["wav"])
+                        rng = seeded_rng(r["id"] + cond)
+                        if cond.startswith("snr"):
+                            noise, _ = load_wav(noise_paths[int(rng.integers(len(noise_paths)))])
+                            samples = add_noise(samples, noise, float(cond[3:]))
+                        elif cond == "reverb":
+                            rir, _ = load_wav(rir_paths[int(rng.integers(len(rir_paths)))])
+                            samples = add_reverb(samples, rir)
+                        hyp = decode(rec, samples, sr)
+                    except Exception as e:
+                        skipped += 1
+                        print(f"[eval] skip {r['id']} ({cond}): {e}")
+                        continue
+                    scored += 1
                     ref = r["units"].replace(" ", "")
                     ru, hu = unitize(ref), unitize(hyp)
                     errs_u += edit_distance(ru, hu); tot_u += len(ru)
                     errs_c += edit_distance(ref, hyp); tot_c += len(ref)
                     refm, hypm = cap_runs(ref), cap_runs(hyp)
                     errs_m += edit_distance(refm, hypm); tot_m += len(refm)
+                assert skipped <= max(3, len(rows) // 10), (
+                    f"{skipped}/{len(rows)} clips unreadable in {sname}/{cond} — volume unhealthy, "
+                    "stop/start the pod and re-paste")
                 mreport.setdefault(sname, {})[cond] = {
                     "unit_per": round(100.0 * errs_u / max(1, tot_u), 2),
                     "char_per": round(100.0 * errs_c / max(1, tot_c), 2),
                     "cap_char_per": round(100.0 * errs_m / max(1, tot_m), 2),
-                    "clips": len(rows),
+                    "clips": scored,
                 }
                 v = mreport[sname][cond]
                 print(f"[eval] {mname} {sname}/{cond}: "
                       f"unit-PER {v['unit_per']}% cap-char-PER {v['cap_char_per']}% "
-                      f"({len(rows)} clips)")
+                      f"({scored} clips, {skipped} skipped)")
 
         # probes from ea_unseen
         probe_rows = sets["ea_unseen"][:150]
         # probe_trunc: cut audio at 60%; a verse-prior model completes anyway
         ratios = []
         for r in probe_rows:
-            samples, sr = load_wav(r["wav"])
-            hyp = decode(rec, samples[: int(len(samples) * 0.6)], sr)
+            try:
+                samples, sr = load_wav(r["wav"])
+                hyp = decode(rec, samples[: int(len(samples) * 0.6)], sr)
+            except Exception as e:
+                print(f"[eval] skip probe_trunc {r['id']}: {e}")
+                continue
             ref_u = unitize(r["units"].replace(" ", ""))
             exp_len = max(1.0, 0.6 * len(ref_u))
             ratios.append(len(unitize(hyp)) / exp_len)
@@ -1770,8 +1786,12 @@ def main():
         errs = tot = 0
         for i, r in enumerate(probe_rows[:100]):
             other = probe_rows[(i + 1) % len(probe_rows)]
-            samples, sr = load_wav(r["wav"])
-            hyp = decode(rec, samples, sr)
+            try:
+                samples, sr = load_wav(r["wav"])
+                hyp = decode(rec, samples, sr)
+            except Exception as e:
+                print(f"[eval] skip probe_cross {r['id']}: {e}")
+                continue
             wrong_ref = unitize(other["units"].replace(" ", ""))
             errs += edit_distance(wrong_ref, unitize(hyp)); tot += len(wrong_ref)
         mreport["probe_cross"] = {"clean": {
