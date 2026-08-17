@@ -60,6 +60,10 @@ export MU_DEV_XIDS="${MU_DEV_XIDS:-13,19}"      # moshaf_<X>.* held entirely out
 export MU_MATCH_RATIO_MIN="${MU_MATCH_RATIO_MIN:-0.99}"
 
 export NUM_EPOCHS="${NUM_EPOCHS:-10}"
+# 0.045 (the v1 value) proved marginally unstable on the v2 mixed diet: ~12% of
+# steps hit gradient-explosion rescues from epoch 1, plateauing the loss at
+# 0.42. Halving the LR is the standard zipformer fix for exactly this.
+export BASE_LR="${BASE_LR:-0.022}"
 export GLOBAL_BATCH_SEC="${GLOBAL_BATCH_SEC:-3000}"  # per-GPU max_duration = this / WORLD_SIZE
 export TRAIN_GPUS="${TRAIN_GPUS:-4}"                 # intended S8 pod shape; smoke tests THIS batch size
 export EXPECTED_GPUS="${EXPECTED_GPUS:-}"            # set on the training pod to assert the pod shape
@@ -1362,7 +1366,9 @@ class GainJitter:
             if random.random() < self.p:
                 db = random.uniform(self.min_db, self.max_db)
                 features[i] += db * math.log(10.0) / 10.0
-        return features
+        # hard input clamp: log-mel lives in ~[-25, 25]; nothing outside +-35
+        # is legitimate audio, and one extreme frame can explode the gradients
+        return features.clamp_(min=-35.0, max=35.0)
 
 
 class LibriSpeechAsrDataModule:
@@ -2070,6 +2076,10 @@ patches = [
     # prep caps at 26.5s; 0.9x speed stretches to 29.4s — keep up to 30.5s
     ("if c.duration < 1.0 or c.duration > 20.0:",
      "if c.duration < 1.0 or c.duration > 30.5:"),
+    # muaalem segments are short with DENSE realization labels; cuts sitting at
+    # the CTC frames-vs-tokens edge produce huge (non-inf) gradient spikes.
+    # Widen the safety margin to drop the borderline-density tail.
+    ("if (T - 2) < len(tokens):", "if (T - 6) < len(tokens):"),
 ]
 for old, new in patches:
     assert src.count(old) == 1, f"patch anchor not found exactly once: {old!r}"
@@ -2086,6 +2096,7 @@ cp -f "$TOOLS/asr_datamodule.py" "$RECIPE/"
 train_common_args() {
   echo --world-size "$WORLD_SIZE" \
        --use-transducer 0 --use-ctc 1 \
+       --base-lr "$BASE_LR" \
        --causal 1 --chunk-size "$CHUNK_SIZES" \
        --use-bf16 1 \
        --bpe-model "$DATA/tokens.txt" \
