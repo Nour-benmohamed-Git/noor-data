@@ -1828,28 +1828,29 @@ def main():
         print(f"[gate] {'PASS' if passed else 'FAIL'} {name}: {detail}")
 
     # The matcher-faithful metric (cap_char_per: character runs capped at 2,
-    # exactly what the app's normalizePhonemesForMatch does) drives the gates:
-    # madd-length realization differences must not decide ship/no-ship.
-    # G1: beats incumbent everywhere; crushes it on the two headline sets.
+    # exactly what the app's normalizePhonemesForMatch does) drives the gates.
+    # G1 compares ONLY on the FAIR sets. The everyayah sets are TRAINING DATA
+    # for the incumbent (v1 trained on those exact recordings, no reciter
+    # holdout — measured 0.3-0.6% PER there = memorization, not skill), so a
+    # beats-incumbent test on them would fail any honestly-held-out model.
+    # Fair: mu_unseen (v1 never saw muaalem) + rs_user (real users, new to both).
     # rs_mistake is EXCLUDED: its PER is SUPPOSED to be high (G4 gates it the
-    # other way) — the verse-memorizing incumbent scores artificially low there.
+    # other way).
+    FAIR_SETS = ("mu_unseen", "rs_user")
     worst = []
-    for sname, conds in cand.items():
-        if sname.startswith("probe") or sname == "rs_mistake":
-            continue
-        for cond, v in conds.items():
+    for sname in FAIR_SETS:
+        for cond, v in cand.get(sname, {}).items():
             iv = inc.get(sname, {}).get(cond)
             if iv is None or "cap_char_per" not in v:
                 continue
             if v["cap_char_per"] >= iv["cap_char_per"]:
                 worst.append(f"{sname}/{cond}: {v['cap_char_per']} vs {iv['cap_char_per']}")
-    check("G1a beats incumbent on every set x condition (cap-char)", not worst,
+    check("G1a beats incumbent on fair sets (cap-char)", not worst,
           worst or "all better")
-    for sname in ("rs_user", "ea_unseen"):
-        c = cand[sname]["clean"]["cap_char_per"]
-        i = inc[sname]["clean"]["cap_char_per"]
-        check(f"G1b {sname} <= 0.6x incumbent (cap-char)", c <= 0.6 * i,
-              f"{c} vs 0.6*{i}={0.6 * i:.1f}")
+    c = cand["rs_user"]["clean"]["cap_char_per"]
+    i = inc["rs_user"]["clean"]["cap_char_per"]
+    check("G1b rs_user <= 0.6x incumbent (cap-char)", c <= 0.6 * i,
+          f"{c} vs 0.6*{i}={0.6 * i:.1f}")
 
     # G2: absolute bars — ea_unseen on unit-PER (comparable to the reference
     # model's published unseen-reciter 11.63%), rs_user on the matcher metric
